@@ -26,7 +26,9 @@ export default function HomePage() {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [frames, setFrames] = useState(0);
+
   const [faces, setFaces] = useState(0);
+  const [stage, setStage] = useState("idle");
 
 
   const resultRef = useRef<HTMLDivElement>(null);
@@ -34,7 +36,7 @@ export default function HomePage() {
   // Check backend health on mount
   useEffect(() => {
     checkHealth()
-      .then((h:any) => setDemoMode(h.demo_mode))
+      .then((h: any) => setDemoMode(h.demo_mode))
       .catch(() => setDemoMode(true));
   }, []);
 
@@ -80,9 +82,9 @@ export default function HomePage() {
   //     }, 1000);
 
   //     const res = await analyzeFile(selectedFile, fileMode);
-      
+
   //     clearInterval(interval);
-      
+
   //     setResult(res);
   //     setStatus("done");
 
@@ -97,70 +99,86 @@ export default function HomePage() {
   // }, [selectedFile, fileMode]);
 
   const handleAnalyze = useCallback(async () => {
-  if (!selectedFile) return;
+    if (!selectedFile) return;
 
-  setStatus("uploading");
-  setResult(null);
-  setError(null);
+    setStatus("uploading");
+    setResult(null);
+    setError(null);
 
-  const interval = setInterval(async () => {
+    setProgress(0);
+    setMessage("Uploading file");
+    setFrames(0);
+    setFaces(0);
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE}/progress`
+        );
+
+        const data = await response.json();
+
+        console.log("Progress update:", data);
+
+        setProgress(data.progress);
+        setMessage(data.message);
+        setFrames(data.frames_processed);
+        setFaces(data.faces_found);
+        setStage(data.stage);
+
+        if (data.stage === "complete") {
+          clearInterval(interval);
+        }
+
+      } catch (err) {
+        console.error("Progress polling error:", err);
+      }
+
+    }, 1000);
+
     try {
-      const response = await fetch(
-        `${API_BASE}/progress`
+
+      await new Promise((r) => setTimeout(r, 600));
+
+      setStatus("analyzing");
+
+      const res = await analyzeFile(
+        selectedFile,
+        fileMode
       );
 
-      const data = await response.json();
+      setProgress(100);
+      setMessage("Analysis complete");
 
-      setProgress(data.progress);
-      setMessage(data.message);
-      setFrames(data.frames_processed);
-      setFaces(data.faces_found);
+      await new Promise((r) => setTimeout(r, 500));
 
-    } catch (err) {
-      console.error("Progress polling error:", err);
+      setResult(res);
+      setStatus("done");
+
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 200);
+
+    } catch (e: unknown) {
+
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Analysis failed. Please try again."
+      );
+
+      setStatus("error");
+
+    } finally {
+
+      clearInterval(interval);
+
     }
-  }, 1000);
 
-  try {
-
-    await new Promise((r) => setTimeout(r, 600));
-
-    setStatus("analyzing");
-
-    const res = await analyzeFile(
-      selectedFile,
-      fileMode
-    );
-
-    setProgress(100);
-
-    setResult(res);
-    setStatus("done");
-
-    setTimeout(() => {
-      resultRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 200);
-
-  } catch (e: unknown) {
-
-    setError(
-      e instanceof Error
-        ? e.message
-        : "Analysis failed. Please try again."
-    );
-
-    setStatus("error");
-
-  } finally {
-
-    clearInterval(interval);
-
-  }
-
-}, [selectedFile, fileMode]);
+  }, [selectedFile, fileMode]);
 
 
   const handleReset = useCallback(() => {
@@ -217,6 +235,7 @@ export default function HomePage() {
                 <AnalysisProgress
                   status={status}
                   progress={progress}
+                  stage={stage}
                   message={message}
                   frames={frames}
                   faces={faces}
