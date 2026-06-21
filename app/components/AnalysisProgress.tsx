@@ -13,53 +13,62 @@ import type { AnalysisStatus } from "../types";
 interface AnalysisProgressProps {
   status: AnalysisStatus;
   progress: number;
+  stage: string;
   message: string;
   frames: number;
   faces: number;
 }
+
 
 const STEPS = [
   {
     label: "Upload",
     description: "Receiving media file",
     icon: Upload,
-    threshold: 10,
   },
   {
     label: "Frame Extraction",
     description: "Extracting visual information",
     icon: Cpu,
-    threshold: 30,
   },
   {
     label: "Face Detection",
     description: "Locating facial regions",
     icon: ScanSearch,
-    threshold: 60,
   },
   {
     label: "AI Analysis",
     description: "Running deepfake detection model",
     icon: Brain,
-    threshold: 90,
   },
 ];
 
 export default function AnalysisProgress({
   status,
   progress,
+  stage,
   message,
   frames,
   faces,
 }: AnalysisProgressProps) {
-  const activeStep = STEPS.findIndex(
-    (step) => progress < step.threshold
-  );
+
+  const stageMap: Record<string, number> = {
+    upload: 0,
+    extract: 1,
+    detect: 2,
+    predict: 3,
+    finalize: 3,
+    complete: 4,
+  };
+
+  const activeStep = stageMap[stage] ?? 0;
+
+  const isComplete = stage === "complete";
 
   const currentStep =
-    activeStep === -1
+    activeStep >= STEPS.length
       ? STEPS[STEPS.length - 1]
-      : STEPS[Math.max(activeStep, 0)];
+      : STEPS[activeStep];
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-indigo-500/20 bg-slate-900/60 backdrop-blur-xl shadow-[0_0_80px_rgba(99,102,241,0.15)]">
@@ -115,7 +124,9 @@ export default function AnalysisProgress({
               </p>
 
               <h3 className="text-lg font-semibold text-white">
-                {currentStep.label}
+                {isComplete
+                  ? "Analysis Complete"
+                  : currentStep.label}
               </h3>
 
               <p className="text-sm text-slate-400">
@@ -129,29 +140,28 @@ export default function AnalysisProgress({
         </div>
 
         {/* Workflow Steps */}
-        <div className="space-y-4 mb-8">
+        <div className="grid md:grid-cols-2 gap-4">
 
           {STEPS.map((step, index) => {
             const Icon = step.icon;
 
-            const completed = progress >= step.threshold;
+            const completed =
+              isComplete
+                ? true
+                : index < activeStep;
 
-            const active =
-              !completed &&
-              (activeStep === index ||
-                (activeStep === -1 &&
-                  index === STEPS.length - 1));
+            const active = index === activeStep;
 
             return (
               <div
                 key={step.label}
                 className={`
+                  
                   relative overflow-hidden rounded-2xl border p-4
                   transition-all duration-500
-                  ${
-                    completed
-                      ? "border-emerald-500/30 bg-emerald-500/10"
-                      : active
+                  ${completed
+                    ? "border-emerald-500/30 bg-emerald-500/10"
+                    : active
                       ? "border-indigo-500/40 bg-indigo-500/10 scale-[1.01]"
                       : "border-slate-700/40 bg-slate-800/30"
                   }
@@ -166,10 +176,9 @@ export default function AnalysisProgress({
                   <div
                     className={`
                       h-12 w-12 rounded-xl flex items-center justify-center
-                      ${
-                        completed
-                          ? "bg-emerald-500/20"
-                          : active
+                      ${completed
+                        ? "bg-emerald-500/20"
+                        : active
                           ? "bg-indigo-500/20"
                           : "bg-slate-700/30"
                       }
@@ -181,10 +190,9 @@ export default function AnalysisProgress({
                       <Icon
                         className={`
                           h-6 w-6
-                          ${
-                            active
-                              ? "text-indigo-400 animate-spin"
-                              : "text-slate-500"
+                          ${active
+                            ? "text-indigo-400 animate-spin"
+                            : "text-slate-500"
                           }
                         `}
                       />
@@ -196,10 +204,9 @@ export default function AnalysisProgress({
                     <h4
                       className={`
                         font-medium
-                        ${
-                          completed
-                            ? "text-emerald-300"
-                            : active
+                        ${completed
+                          ? "text-emerald-300"
+                          : active
                             ? "text-indigo-300"
                             : "text-slate-500"
                         }
@@ -230,6 +237,18 @@ export default function AnalysisProgress({
           })}
         </div>
 
+        <div className="my-8 border-t border-indigo-500/20" >
+          <div className="mt-6 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4">
+
+            <p className="text-lg text-center text-green-400 font-semibold">
+              {status === "uploading"
+                ? "Uploading file..."
+                : message}
+            </p>
+
+          </div>
+        </div>
+
         {/* Progress Bar */}
         <div className="mb-8">
 
@@ -248,7 +267,7 @@ export default function AnalysisProgress({
           <div className="relative h-4 overflow-hidden rounded-full bg-slate-800">
 
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-600 via-cyan-400 to-indigo-300 transition-all duration-700"
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-400 via-cyan-400 to-green-500 transition-all duration-700"
               style={{
                 width: `${progress}%`,
               }}
@@ -293,16 +312,7 @@ export default function AnalysisProgress({
 
         </div>
 
-        {/* Status Footer */}
-        <div className="mt-6 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4">
 
-          <p className="text-sm text-indigo-300">
-            {status === "uploading"
-              ? "Uploading file..."
-              : message}
-          </p>
-
-        </div>
 
       </div>
     </div>
