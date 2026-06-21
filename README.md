@@ -3,25 +3,29 @@
 A full-stack web application for detecting AI-generated (deepfake) faces in videos and images.
 Built on peer-reviewed research published at **IEEE RAAICON 2025**.
 
+### Project Live URL:
+```
+https://deep-guard-ai.vercel.app
+```
+
 ---
 
 ## Architecture
 
 ```
 
-Deep-Guard-AI-Server/          # Flask Python API
-   ├── app.py        # REST API server
-   ├── train.py      # Model training script
-   ├── deepfake-dector-model.h5     # Trained Model  
+Deep-Guard-AI-Server/             # Flask Python API
+   ├── app.py                     # REST API server
+   ├── train.py                   # Model training script
+   ├── deepfake-dector-model.h5   # Trained Model  
    └── requirements.txt
 
-Deep-Guard-AI/         # Next.js 14 + TypeScript + TailwindCSS
+Deep-Guard-AI/                     # Next.js 14 + TypeScript + TailwindCSS
     └── app/
           ├── components/
           ├── lib/
           └── types/
 ```
-
 ### Model
 Hybrid **EfficientNetB0 + Xception** CNN — two pretrained backbone branches run in parallel on each cropped face, their feature vectors concatenated and fed into a classification head. Trained on 110,694 aligned face frames with focal loss to handle severe class imbalance.
 
@@ -29,10 +33,19 @@ Hybrid **EfficientNetB0 + Xception** CNN — two pretrained backbone branches ru
 
 ## Quick Start
 
+### First clone the Frontend and Backend projects from github repositories:
+
+```
+https://github.com/rakib38324/Deep-Guard-AI-Server.git
+```
+
+````
+https://github.com/rakib38324/Deep-Guard-AI.git
+````
 ### 1 — Train the model (first time)
 
 ```bash
-cd backend
+cd Deep-Guard-AI-Server
 
 py -3.11 -m venv venv
 venv\Scripts\activate
@@ -67,7 +80,7 @@ https://data.mendeley.com/datasets/pdcp9mjy3z/2
 ### 2 — Start the backend
 
 ```bash
-cd backend
+cd Deep-Guard-AI-Server
 pip install -r requirements.txt
 
 # Point to your trained model (default: ./deepfake_detector_model.h5)
@@ -83,7 +96,7 @@ The API runs on **http://localhost:8000**.
 ### 3 — Start the frontend
 
 ```bash
-cd frontend
+cd Deep-Guard-AI
 npm install
 npm run dev
 ```
